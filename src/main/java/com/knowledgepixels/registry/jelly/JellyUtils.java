@@ -17,6 +17,7 @@ import scala.Some;
 import scala.jdk.CollectionConverters;
 import scala.runtime.BoxedUnit;
 
+import java.io.InputStream;
 import java.util.Vector;
 
 /**
@@ -71,16 +72,35 @@ public class JellyUtils {
      * @throws MalformedNanopubException if this is not a valid Nanopub
      */
     public static Nanopub readFromDB(byte[] jellyBytes) throws MalformedNanopubException {
+        RdfStreamFrame frame = RdfStreamFrame$.MODULE$.parseFrom(jellyBytes);
+        return readFromFrame(frame);
+    }
+
+    /**
+     * Read a Nanopub from an input byte stream in the Jelly format.
+     * <p>
+     * This is only needed because nanopub-java does not support parsing binary data as input.
+     * TODO: fix this in nanopub-java?
+     * @param is Jelly RDF data (delimited, one frame (!!!))
+     * @return Nanopub
+     * @throws MalformedNanopubException if this is not a valid Nanopub
+     */
+    public static Nanopub readFromInputStream(InputStream is) throws MalformedNanopubException {
+        RdfStreamFrame frame = RdfStreamFrame$.MODULE$.parseFrom(is);
+        return readFromFrame(frame);
+    }
+
+    private static Nanopub readFromFrame(RdfStreamFrame frame) throws MalformedNanopubException {
         Vector<Statement> statements = new Vector<>();
         Vector<Pair<String, String>> namespaces = new Vector<>();
         ProtoDecoder<Statement> decoder = Rdf4jConverterFactory$.MODULE$.quadsDecoder(
-            defaultSupportedOptions,
-            ((prefix, node) -> {
-                namespaces.add(Pair.of(prefix, node.stringValue()));
-                return BoxedUnit.UNIT;
-            })
+                defaultSupportedOptions,
+                ((prefix, node) -> {
+                    namespaces.add(Pair.of(prefix, node.stringValue()));
+                    return BoxedUnit.UNIT;
+                })
         );
-        RdfStreamFrame frame = RdfStreamFrame$.MODULE$.parseFrom(jellyBytes);
+
         CollectionConverters.SeqHasAsJava(frame.rows()).asJava().forEach(row -> {
             Option<Statement> maybeSt = decoder.ingestRow(row);
             if (maybeSt.isDefined()) {

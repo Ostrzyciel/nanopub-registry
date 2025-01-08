@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 
+import com.knowledgepixels.registry.jelly.JellyGetNanopub;
 import com.knowledgepixels.registry.jelly.JellyUtils;
 import org.bson.Document;
 import org.bson.types.Binary;
